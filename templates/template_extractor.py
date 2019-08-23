@@ -33,7 +33,7 @@ def get_tagged_atoms_from_mols(mols):
     atom_tags = []
     for mol in mols:
         new_atoms, new_atom_tags = get_tagged_atoms_from_mol(mol)
-        atoms += new_atoms 
+        atoms += new_atoms
         atom_tags += new_atom_tags
     return atoms, atom_tags
 
@@ -59,17 +59,17 @@ def atoms_are_different(atom1, atom2):
     #if atom1.IsInRing() != atom2.IsInRing(): return True # do not want to check this!
     # e.g., in macrocycle formation, don't want the template to include the entire ring structure
     if atom1.GetNumRadicalElectrons() != atom2.GetNumRadicalElectrons(): return True
-    if atom1.GetIsAromatic() != atom2.GetIsAromatic(): return True 
+    if atom1.GetIsAromatic() != atom2.GetIsAromatic(): return True
 
     # Check bonds and nearest neighbor identity
-    bonds1 = sorted([bond_to_label(bond) for bond in atom1.GetBonds()]) 
-    bonds2 = sorted([bond_to_label(bond) for bond in atom2.GetBonds()]) 
+    bonds1 = sorted([bond_to_label(bond) for bond in atom1.GetBonds()])
+    bonds2 = sorted([bond_to_label(bond) for bond in atom2.GetBonds()])
     if bonds1 != bonds2: return True
 
     return False
 
 def find_map_num(mol, mapnum):
-    return [(a.GetIdx(), a) for a in mol.GetAtoms() if a.HasProp('molAtomMapNumber') 
+    return [(a.GetIdx(), a) for a in mol.GetAtoms() if a.HasProp('molAtomMapNumber')
          and a.GetProp('molAtomMapNumber') == str(mapnum)][0]
 
 def get_tetrahedral_atoms(reactants, products):
@@ -94,7 +94,7 @@ def set_isotope_to_equal_mapnum(mol):
     for a in mol.GetAtoms():
         if a.HasProp('molAtomMapNumber'):
             a.SetIsotope(int(a.GetProp('molAtomMapNumber')))
-            
+
 def get_frag_around_tetrahedral_center(mol, idx):
     '''Builds a MolFragment using neighbors of a tetrahedral atom,
     where the molecule has already been updated to include isotopes'''
@@ -106,7 +106,7 @@ def get_frag_around_tetrahedral_center(mol, idx):
     return Chem.MolFragmentToSmiles(mol, ids_to_include, isomericSmiles=True,
                                    atomSymbols=symbols, allBondsExplicit=True,
                                    allHsExplicit=True)
-            
+
 def check_tetrahedral_centers_equivalent(atom1, atom2):
     '''Checks to see if tetrahedral centers are equivalent in
     chirality, ignoring the ChiralTag. Owning molecules of the
@@ -138,7 +138,7 @@ def get_changed_atoms(reactants, products):
         if VERBOSE: print('warning: total number of tagged atoms differ, stoichometry != 1?')
         #err = 1
 
-    # Find differences 
+    # Find differences
     changed_atoms = [] # actual reactant atom species
     changed_atom_tags = [] # atom map numbers of those atoms
 
@@ -173,7 +173,7 @@ def get_changed_atoms(reactants, products):
     [set_isotope_to_equal_mapnum(reactant) for reactant in reactants]
     [set_isotope_to_equal_mapnum(product) for product in products]
     for (atom_tag, ar, ap) in tetra_atoms:
-        if VERBOSE: 
+        if VERBOSE:
             print('For atom tag {}'.format(atom_tag))
             print('    reactant: {}'.format(ar.GetChiralTag()))
             print('    product:  {}'.format(ap.GetChiralTag()))
@@ -184,7 +184,7 @@ def get_changed_atoms(reactants, products):
             unchanged = check_tetrahedral_centers_equivalent(ar, ap) and \
                     ChiralType.CHI_UNSPECIFIED not in [ar.GetChiralTag(), ap.GetChiralTag()]
             if unchanged:
-                if VERBOSE: 
+                if VERBOSE:
                     print('-> atoms confirmed to have same chirality, no change')
             else:
                 if VERBOSE:
@@ -209,7 +209,7 @@ def get_changed_atoms(reactants, products):
     [clear_isotope(product) for product in products]
 
 
-    if VERBOSE: 
+    if VERBOSE:
         print('{} tagged atoms in reactants change 1-atom properties'.format(len(changed_atom_tags)))
         for smarts in [atom.GetSmarts() for atom in changed_atoms]:
             print('  {}'.format(smarts))
@@ -218,8 +218,8 @@ def get_changed_atoms(reactants, products):
 
 def get_special_groups(mol):
     '''Given an RDKit molecule, this function returns a list of tuples, where
-    each tuple contains the AtomIdx's for a special group of atoms which should 
-    be included in a fragment all together. This should only be done for the 
+    each tuple contains the AtomIdx's for a special group of atoms which should
+    be included in a fragment all together. This should only be done for the
     reactants, otherwise the products might end up with mapping mismatches
 
     We draw a distinction between atoms in groups that trigger that whole
@@ -227,7 +227,7 @@ def get_special_groups(mol):
     be included if another atom matches.'''
 
     # Define templates
-    group_templates = [ 
+    group_templates = [
         (range(3), '[OH0,SH0]=C[O,Cl,I,Br,F]',), # carboxylic acid / halogen
         (range(3), '[OH0,SH0]=CN',), # amide/sulfamide
         (range(4), 'S(O)(O)[Cl]',), # sulfonyl chloride
@@ -238,7 +238,7 @@ def get_special_groups(mol):
         (range(8), 'O=C1N([Br,I,F,Cl])C(=O)CC1',), # NBS brominating agent
         (range(11), 'Cc1ccc(S(=O)(=O)O)cc1'), # Tosyl
         ((7,), 'CC(C)(C)OC(=O)[N]'), # N(boc)
-        ((4,), '[CH3][CH0]([CH3])([CH3])O'), # 
+        ((4,), '[CH3][CH0]([CH3])([CH3])O'), #
         (range(2), '[C,N]=[C,N]',), # alkene/imine
         (range(2), '[C,N]#[C,N]',), # alkyne/nitrile
         ((2,), 'C=C-[*]',), # adj to alkene
@@ -280,7 +280,7 @@ def get_special_groups(mol):
 
 def expand_atoms_to_use(mol, atoms_to_use, groups=[], symbol_replacements=[]):
     '''Given an RDKit molecule and a list of AtomIdX which should be included
-    in the reaction, this function expands the list of AtomIdXs to include one 
+    in the reaction, this function expands the list of AtomIdXs to include one
     nearest neighbor with special consideration of (a) unimportant neighbors and
     (b) important functional groupings'''
 
@@ -293,7 +293,7 @@ def expand_atoms_to_use(mol, atoms_to_use, groups=[], symbol_replacements=[]):
         # Ensure membership of changed atom is checked against group
         for group in groups:
             if int(atom.GetIdx()) in group[0]:
-                if VERBOSE: 
+                if VERBOSE:
                     print('adding group due to match')
                     try:
                         print('Match from molAtomMapNum {}'.format(
@@ -309,21 +309,21 @@ def expand_atoms_to_use(mol, atoms_to_use, groups=[], symbol_replacements=[]):
         for neighbor in atom.GetNeighbors():
             # Evaluate nearest neighbor atom to determine what should be included
             new_atoms_to_use, symbol_replacements = \
-                    expand_atoms_to_use_atom(mol, new_atoms_to_use, neighbor.GetIdx(), 
+                    expand_atoms_to_use_atom(mol, new_atoms_to_use, neighbor.GetIdx(),
                         groups=groups, symbol_replacements=symbol_replacements)
-            
+
     return new_atoms_to_use, symbol_replacements
 
 def expand_atoms_to_use_atom(mol, atoms_to_use, atom_idx, groups=[], symbol_replacements=[]):
     '''Given an RDKit molecule and a list of AtomIdx which should be included
-    in the reaction, this function extends the list of atoms_to_use by considering 
+    in the reaction, this function extends the list of atoms_to_use by considering
     a candidate atom extension, atom_idx'''
 
     # See if this atom belongs to any special groups (highest priority)
     found_in_group = False
     for group in groups: # first index is atom IDs for match, second is what to include
         if int(atom_idx) in group[0]: # int correction
-            if VERBOSE: 
+            if VERBOSE:
                 print('adding group due to match')
                 try:
                     print('Match from molAtomMapNum {}'.format(
@@ -331,16 +331,16 @@ def expand_atoms_to_use_atom(mol, atoms_to_use, atom_idx, groups=[], symbol_repl
                     ))
                 except KeyError:
                     pass
-            # Add the whole list, redundancies don't matter 
+            # Add the whole list, redundancies don't matter
             # *but* still call convert_atom_to_wildcard!
             for idx in group[1]:
                 if idx not in atoms_to_use:
                         atoms_to_use.append(idx)
                         symbol_replacements.append((idx, convert_atom_to_wildcard(mol.GetAtomWithIdx(idx))))
             found_in_group = True
-    if found_in_group:  
+    if found_in_group:
         return atoms_to_use, symbol_replacements
-        
+
     # How do we add an atom that wasn't in an identified important functional group?
     # Develop generalized SMARTS symbol
 
@@ -357,7 +357,7 @@ def expand_atoms_to_use_atom(mol, atoms_to_use, atom_idx, groups=[], symbol_repl
     return atoms_to_use, symbol_replacements
 
 def convert_atom_to_wildcard(atom):
-    '''This function takes an RDKit atom and turns it into a wildcard 
+    '''This function takes an RDKit atom and turns it into a wildcard
     using heuristic generalization rules. This function should be used
     when candidate atoms are used to extend the reaction core for higher
     generalizability'''
@@ -368,7 +368,7 @@ def convert_atom_to_wildcard(atom):
         if atom.GetFormalCharge() != 0:
             charges = re.search('([-+]+[1-9]?)', atom.GetSmarts())
             symbol = symbol.replace(';D1', ';{};D1'.format(charges.group()))
-    
+
     else:
         # Initialize
         symbol = '['
@@ -393,20 +393,20 @@ def convert_atom_to_wildcard(atom):
 
     # Close with label or with bracket
     label = re.search('\:[0-9]+\]', atom.GetSmarts())
-    if label: 
+    if label:
         symbol += label.group()
     else:
         symbol += ']'
 
-    if VERBOSE: 
+    if VERBOSE:
         if symbol != atom.GetSmarts():
             print('Improved generality of atom SMARTS {} -> {}'.format(atom.GetSmarts(), symbol))
 
     return symbol
 
 def reassign_atom_mapping(transform):
-    '''This function takes an atom-mapped reaction SMILES and reassigns 
-    the atom-mapping labels (numbers) from left to right, once 
+    '''This function takes an atom-mapped reaction SMILES and reassigns
+    the atom-mapping labels (numbers) from left to right, once
     that transform has been canonicalized.'''
 
     all_labels = re.findall('\:([0-9]+)\]', transform)
@@ -422,7 +422,7 @@ def reassign_atom_mapping(transform):
         replacements.append(replacement_dict[label])
 
     # Perform replacements in order
-    transform_newmaps = re.sub('\:[0-9]+\]', 
+    transform_newmaps = re.sub('\:[0-9]+\]',
         lambda match: (':' + replacements.pop(0) + ']'),
         transform)
 
@@ -462,7 +462,7 @@ def get_strict_smarts_for_atom(atom):
             symbol = symbol.replace(':', ';{}:'.format(H_symbol))
         else:
             symbol = symbol.replace(']', ';{}]'.format(H_symbol))
-      
+
     # Explicit degree
     if ':' in symbol:
         symbol = symbol.replace(':', ';D{}:'.format(atom.GetDegree()))
@@ -474,7 +474,7 @@ def get_strict_smarts_for_atom(atom):
         charge = atom.GetFormalCharge()
         charge_symbol = '+' if (charge >= 0) else '-'
         charge_symbol += '{}'.format(abs(charge))
-        if ':' in symbol: 
+        if ':' in symbol:
             symbol = symbol.replace(':', ';{}:'.format(charge_symbol))
         else:
             symbol = symbol.replace(']', ';{}]'.format(charge_symbol))
@@ -483,8 +483,8 @@ def get_strict_smarts_for_atom(atom):
 
 def expand_changed_atom_tags(changed_atom_tags, reactant_fragments):
     '''Given a list of changed atom tags (numbers as strings) and a string consisting
-    of the reactant_fragments to include in the reaction transform, this function 
-    adds any tagged atoms found in the reactant side of the template to the 
+    of the reactant_fragments to include in the reaction transform, this function
+    adds any tagged atoms found in the reactant side of the template to the
     changed_atom_tags list so that those tagged atoms are included in the products'''
 
     expansion = []
@@ -495,10 +495,10 @@ def expand_changed_atom_tags(changed_atom_tags, reactant_fragments):
     if VERBOSE: print('after building reactant fragments, additional labels included: {}'.format(expansion))
     return expansion
 
-def get_fragments_for_changed_atoms(mols, changed_atom_tags, radius=0, 
+def get_fragments_for_changed_atoms(mols, changed_atom_tags, radius=0,
     category='reactants', expansion=[]):
     '''Given a list of RDKit mols and a list of changed atom tags, this function
-    computes the SMILES string of molecular fragments using MolFragmentToSmiles 
+    computes the SMILES string of molecular fragments using MolFragmentToSmiles
     for all changed fragments.
 
     expansion: atoms added during reactant expansion that should be included and
@@ -537,7 +537,7 @@ def get_fragments_for_changed_atoms(mols, changed_atom_tags, radius=0,
 
         # Check neighbors (any atom)
         for k in range(radius):
-            atoms_to_use, symbol_replacements = expand_atoms_to_use(mol, atoms_to_use, 
+            atoms_to_use, symbol_replacements = expand_atoms_to_use(mol, atoms_to_use,
                 groups=groups, symbol_replacements=symbol_replacements)
 
         if category == 'products':
@@ -549,12 +549,12 @@ def get_fragments_for_changed_atoms(mols, changed_atom_tags, radius=0,
                     if label in expansion and label not in changed_atom_tags:
                         atoms_to_use.append(atom.GetIdx())
                         # Make the expansion a wildcard
-                        symbol_replacements.append((atom.GetIdx(), convert_atom_to_wildcard(atom))) 
+                        symbol_replacements.append((atom.GetIdx(), convert_atom_to_wildcard(atom)))
                         if VERBOSE: print('expanded label {} to wildcard in products'.format(label))
-            
+
             # Make sure unmapped atoms are included (from products)
             for atom in mol.GetAtoms():
-                if not atom.HasProp('molAtomMapNumber'): 
+                if not atom.HasProp('molAtomMapNumber'):
                     atoms_to_use.append(atom.GetIdx())
                     symbol = get_strict_smarts_for_atom(atom)
                     symbol_replacements.append((atom.GetIdx(), symbol))
@@ -564,18 +564,18 @@ def get_fragments_for_changed_atoms(mols, changed_atom_tags, radius=0,
         for (i, symbol) in symbol_replacements:
             symbols[i] = symbol
 
-        if not atoms_to_use: 
+        if not atoms_to_use:
             continue
-        
+
         # Keep flipping stereocenters until we are happy...
         # this is a sloppy fix during extraction to achieve consistency
         tetra_consistent = False
         num_tetra_flips = 0
         while not tetra_consistent and num_tetra_flips < 100:
             mol_copy = deepcopy(mol)
-            [x.ClearProp('molAtomMapNumber') for x in mol_copy.GetAtoms()]   
-            this_fragment = AllChem.MolFragmentToSmiles(mol_copy, atoms_to_use, 
-                atomSymbols=symbols, allHsExplicit=True, 
+            [x.ClearProp('molAtomMapNumber') for x in mol_copy.GetAtoms()]
+            this_fragment = AllChem.MolFragmentToSmiles(mol_copy, atoms_to_use,
+                atomSymbols=symbols, allHsExplicit=True,
                 isomericSmiles=USE_STEREOCHEMISTRY, allBondsExplicit=True)
 
             # Figure out what atom maps are tetrahedral centers
@@ -592,17 +592,17 @@ def get_fragments_for_changed_atoms(mols, changed_atom_tags, radius=0,
                 if atom.HasProp('molAtomMapNumber'):
                     atom.SetIsotope(int(atom.GetProp('molAtomMapNumber')))
                     map_to_id[atom.GetProp('molAtomMapNumber')] = atom.GetIdx()
-            
+
             # Look for matches
             tetra_consistent = True
             all_matched_ids = []
-            
+
             # skip substructure matching if there are a lot of fragments
-            # this can help prevent GetSubstructMatches from hanging 
+            # this can help prevent GetSubstructMatches from hanging
             frag_smi = Chem.MolToSmiles(this_fragment_mol)
             if frag_smi.count('.') > 5:
                 break
-            
+
             for matched_ids in mol.GetSubstructMatches(this_fragment_mol, useChirality=True):
                 all_matched_ids.extend(matched_ids)
             shuffle(tetra_map_nums)
@@ -623,12 +623,12 @@ def get_fragments_for_changed_atoms(mols, changed_atom_tags, radius=0,
                     symbols[map_to_id[tetra_map_num]] = symbol
                     num_tetra_flips += 1
                     # IMPORTANT: only flip one at a time
-                    break 
+                    break
 
             # Clear isotopes
             for atom in mol.GetAtoms():
                 atom.SetIsotope(0)
-        
+
         if not tetra_consistent:
             raise ValueError('Could not find consistent tetrahedral mapping, {} centers'.format(len(tetra_map_nums)))
 
@@ -638,7 +638,7 @@ def get_fragments_for_changed_atoms(mols, changed_atom_tags, radius=0,
     # auxiliary template information: is this an intramolecular reaction or dimerization?
     intra_only = (1 == len(mols_changed))
     dimer_only = (1 == len(set(mols_changed))) and (len(mols_changed) == 2)
-    
+
     return fragments[:-1], intra_only, dimer_only
 
 def canonicalize_transform(transform):
@@ -651,7 +651,7 @@ def canonicalize_transform(transform):
     return reassign_atom_mapping(transform_reordered)
 
 def canonicalize_template(template):
-    '''This function takes one-half of a template SMARTS string 
+    '''This function takes one-half of a template SMARTS string
     (i.e., reactants or products) and re-orders them based on
     an equivalent string without atom mapping.'''
 
@@ -695,14 +695,14 @@ def bond_to_label(bond):
 
     return '{}{}{}'.format(atoms[0], bond.GetSmarts(), atoms[1])
 
-def extract_from_reaction(reaction):
+def extract_from_reaction(reaction, return_dict):
     reactants = mols_from_smiles_list(replace_deuterated(reaction['reactants']).split('.'))
     products = mols_from_smiles_list(replace_deuterated(reaction['products']).split('.'))
-    
+
     # if rdkit cant understand molecule, return
-    if None in reactants: return {'reaction_id': reaction['_id']} 
+    if None in reactants: return {'reaction_id': reaction['_id']}
     if None in products: return {'reaction_id': reaction['_id']}
-    
+
     # try to sanitize molecules
     try:
         for i in range(len(reactants)):
@@ -717,7 +717,7 @@ def extract_from_reaction(reaction):
         print('Could not load SMILES or sanitize')
         print('ID: {}'.format(reaction['_id']))
         return {'reaction_id': reaction['_id']}
-    
+
     are_unmapped_product_atoms = False
     extra_reactant_fragment = ''
     for product in products:
@@ -742,8 +742,8 @@ def extract_from_reaction(reaction):
             bond_symbols = ['~' for b in product.GetBonds()]
             if unmapped_ids:
                 extra_reactant_fragment += AllChem.MolFragmentToSmiles(
-                    product, unmapped_ids, 
-                    allHsExplicit = False, isomericSmiles = USE_STEREOCHEMISTRY, 
+                    product, unmapped_ids,
+                    allHsExplicit = False, isomericSmiles = USE_STEREOCHEMISTRY,
                     atomSymbols = atom_symbols, bondSymbols = bond_symbols
                 ) + '.'
         if extra_reactant_fragment:
@@ -761,7 +761,7 @@ def extract_from_reaction(reaction):
 
     # Calculate changed atoms
     changed_atoms, changed_atom_tags, err = get_changed_atoms(reactants, products)
-    if err: 
+    if err:
         if VERBOSE:
             print('Could not get changed atoms')
             print('ID: {}'.format(reaction['_id']))
@@ -775,11 +775,11 @@ def extract_from_reaction(reaction):
 
     try:
         # Get fragments for reactants
-        reactant_fragments, intra_only, dimer_only = get_fragments_for_changed_atoms(reactants, changed_atom_tags, 
+        reactant_fragments, intra_only, dimer_only = get_fragments_for_changed_atoms(reactants, changed_atom_tags,
             radius = 1, expansion = [], category = 'reactants')
-        # Get fragments for products 
+        # Get fragments for products
         # (WITHOUT matching groups but WITH the addition of reactant fragments)
-        product_fragments, _, _  = get_fragments_for_changed_atoms(products, changed_atom_tags, 
+        product_fragments, _, _  = get_fragments_for_changed_atoms(products, changed_atom_tags,
             radius = 0, expansion = expand_changed_atom_tags(changed_atom_tags, reactant_fragments),
             category = 'products')
     except ValueError as e:
@@ -791,7 +791,7 @@ def extract_from_reaction(reaction):
     # Put together and canonicalize (as best as possible)
     rxn_string = '{}>>{}'.format(reactant_fragments, product_fragments)
     rxn_canonical = canonicalize_transform(rxn_string)
-    # Change from inter-molecular to intra-molecular 
+    # Change from inter-molecular to intra-molecular
     rxn_canonical_split = rxn_canonical.split('>>')
     rxn_canonical = rxn_canonical_split[0][1:-1].replace(').(', '.') + \
         '>>' + rxn_canonical_split[1][1:-1].replace(').(', '.')
@@ -803,7 +803,7 @@ def extract_from_reaction(reaction):
 
     # Load into RDKit
     rxn = AllChem.ReactionFromSmarts(retro_canonical)
-    if rxn.Validate()[1] != 0: 
+    if rxn.Validate()[1] != 0:
         print('Could not validate reaction successfully')
         print('ID: {}'.format(reaction['_id']))
         print('retro_canonical: {}'.format(retro_canonical))
@@ -819,5 +819,6 @@ def extract_from_reaction(reaction):
         'reaction_id': reaction['_id'],
         'necessary_reagent': extra_reactant_fragment,
     }
-    
+
+    return_dict['template'] = template
     return template
